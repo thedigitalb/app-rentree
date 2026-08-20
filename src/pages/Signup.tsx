@@ -4,16 +4,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { HB } from "@/components/HB";
 import { Button } from "@/components/ui/Button";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 import { Input, Label } from "@/components/ui/Input";
 
 export default function Signup() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [envoiGoogle, setEnvoiGoogle] = useState(false);
   const [attenteConfirmation, setAttenteConfirmation] = useState(false);
+
+  async function onGoogle() {
+    setErreur(null);
+    setEnvoiGoogle(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setErreur(error);
+      setEnvoiGoogle(false);
+    }
+    // en cas de succès, la page est redirigée vers Google puis revient ici.
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,6 +76,16 @@ export default function Signup() {
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-rentree-creme px-6">
       <HB humeur="neutre" taille={100} />
       <h1 className="font-title text-2xl font-bold">Créer votre compte</h1>
+
+      <div className="w-full max-w-xs">
+        <GoogleButton onClick={onGoogle} disabled={envoiGoogle} texte={envoiGoogle ? "Redirection…" : "Continuer avec Google"} />
+      </div>
+
+      <div className="flex w-full max-w-xs items-center gap-3 text-xs font-semibold text-rentree-encre/40">
+        <span className="h-px flex-1 bg-black/10" />
+        ou
+        <span className="h-px flex-1 bg-black/10" />
+      </div>
 
       <form onSubmit={onSubmit} className="w-full max-w-xs space-y-4">
         <div>

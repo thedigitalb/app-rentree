@@ -3,15 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { HB } from "@/components/HB";
 import { Button } from "@/components/ui/Button";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 import { Input, Label } from "@/components/ui/Input";
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [envoiGoogle, setEnvoiGoogle] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,10 +28,31 @@ export default function Login() {
     navigate("/", { replace: true });
   }
 
+  async function onGoogle() {
+    setErreur(null);
+    setEnvoiGoogle(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setErreur(error);
+      setEnvoiGoogle(false);
+    }
+    // en cas de succès, la page est redirigée vers Google puis revient ici.
+  }
+
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-rentree-creme px-6">
       <HB humeur="neutre" taille={100} />
       <h1 className="font-title text-2xl font-bold">Content de vous revoir</h1>
+
+      <div className="w-full max-w-xs">
+        <GoogleButton onClick={onGoogle} disabled={envoiGoogle} texte={envoiGoogle ? "Redirection…" : "Continuer avec Google"} />
+      </div>
+
+      <div className="flex w-full max-w-xs items-center gap-3 text-xs font-semibold text-rentree-encre/40">
+        <span className="h-px flex-1 bg-black/10" />
+        ou
+        <span className="h-px flex-1 bg-black/10" />
+      </div>
 
       <form onSubmit={onSubmit} className="w-full max-w-xs space-y-4">
         <div>
