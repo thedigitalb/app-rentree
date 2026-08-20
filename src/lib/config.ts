@@ -5,4 +5,4 @@
  * configuré pour réafficher le bouton "Continuer avec Google" partout où
  * il est utilisé, sans autre changement de code.
  */
-export const GOOGLE_AUTH_ACTIVE = false;
+export const GOOGLE_AUTH_ACTIVE = true;
