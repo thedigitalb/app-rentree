@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { GOOGLE_AUTH_ACTIVE } from "@/lib/config";
 import { HB } from "@/components/HB";
 import { Button } from "@/components/ui/Button";
 import { GoogleButton } from "@/components/ui/GoogleButton";
@@ -44,15 +45,19 @@ export default function Login() {
       <HB humeur="neutre" taille={100} />
       <h1 className="font-title text-2xl font-bold">Content de vous revoir</h1>
 
-      <div className="w-full max-w-xs">
-        <GoogleButton onClick={onGoogle} disabled={envoiGoogle} texte={envoiGoogle ? "Redirection…" : "Continuer avec Google"} />
-      </div>
+      {GOOGLE_AUTH_ACTIVE && (
+        <>
+          <div className="w-full max-w-xs">
+            <GoogleButton onClick={onGoogle} disabled={envoiGoogle} texte={envoiGoogle ? "Redirection…" : "Continuer avec Google"} />
+          </div>
 
-      <div className="flex w-full max-w-xs items-center gap-3 text-xs font-semibold text-rentree-encre/40">
-        <span className="h-px flex-1 bg-black/10" />
-        ou
-        <span className="h-px flex-1 bg-black/10" />
-      </div>
+          <div className="flex w-full max-w-xs items-center gap-3 text-xs font-semibold text-rentree-encre/40">
+            <span className="h-px flex-1 bg-black/10" />
+            ou
+            <span className="h-px flex-1 bg-black/10" />
+          </div>
+        </>
+      )}
 
       <form onSubmit={onSubmit} className="w-full max-w-xs space-y-4">
         <div>
