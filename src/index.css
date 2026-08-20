@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-title: "Baloo 2", "Fredoka", ui-rounded, system-ui, sans-serif;
+  --font-body: "Nunito", ui-rounded, system-ui, sans-serif;
+
+  --color-rentree-rose: #ffb3d9;
+  --color-rentree-turquoise: #b3f0e5;
+  --color-rentree-jaune: #ffeaa7;
+  --color-rentree-violet: #d9b3ff;
+  --color-rentree-ciel: #b3e5ff;
+  --color-rentree-creme: #fff9f0;
+  --color-rentree-encre: #4a3f5c;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-rentree-creme);
+  color: var(--color-rentree-encre);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+h1,
+h2,
+h3,
+.font-title {
+  font-family: var(--font-title);
+}
+
+/* petite barre de progression ronde réutilisée un peu partout */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
