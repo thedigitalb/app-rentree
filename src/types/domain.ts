@@ -58,3 +58,19 @@ export const CATEGORIES_FOURNITURE = [
 ] as const;
 
 export type CategorieFourniture = (typeof CATEGORIES_FOURNITURE)[number];
+
+/** Palette de couleurs de cahier par matière — plus saturée que la palette
+ * enfant, pensée pour rester distinguable même avec beaucoup de matières
+ * (ex. repérer le cahier de maths en un coup d'œil au magasin). */
+export const COULEURS_MATIERE = [
+  "#F87171", // rouge
+  "#FB923C", // orange
+  "#FACC15", // jaune
+  "#4ADE80", // vert
+  "#2DD4BF", // turquoise
+  "#60A5FA", // bleu
+  "#A78BFA", // violet
+  "#F472B6", // rose
+  "#A16207", // marron
+  "#9CA3AF", // gris
+] as const;

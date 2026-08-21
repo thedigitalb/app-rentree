@@ -9,6 +9,7 @@ import {
   useMarquerAchete,
   useDeleteFournitureItem,
   qteAAcheter,
+  type FournitureAvecMatiere,
 } from "@/hooks/data/useFournitures";
 import { useAllocationsPourEnfant } from "@/hooks/data/useAttribuables";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -21,7 +22,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HB } from "@/components/HB";
 import { Confetti } from "@/components/Confetti";
-import { CATEGORIES_FOURNITURE, type FournitureItem } from "@/types/domain";
+import { CATEGORIES_FOURNITURE, COULEURS_MATIERE } from "@/types/domain";
 
 type Onglet = "fournitures" | "matieres";
 
@@ -130,7 +131,7 @@ function SectionFournitures({
   online,
 }: {
   familyMemberId: string;
-  fournitures: FournitureItem[];
+  fournitures: FournitureAvecMatiere[];
   online: boolean;
 }) {
   const marquerAchete = useMarquerAchete();
@@ -180,7 +181,14 @@ function SectionFournitures({
                 return (
                   <div key={f.id} className="flex items-center gap-3 border-b border-black/5 pb-3 last:border-0 last:pb-0">
                     <div className="min-w-0 flex-1">
-                      <p className={`font-medium ${f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""}`}>
+                      <p className={`flex items-center gap-1.5 font-medium ${f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""}`}>
+                        {f.matieres?.couleur && (
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: f.matieres.couleur }}
+                            title={`Cahier ${f.matieres.nom}`}
+                          />
+                        )}
                         {f.item}
                       </p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-rentree-encre/60">
@@ -345,7 +353,14 @@ function SectionMatieres({ familyMemberId, online }: { familyMemberId: string; o
       {matieres.map((m) => (
         <Card key={m.id} className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <p className={`font-title font-semibold ${!m.active ? "text-rentree-encre/40" : ""}`}>{m.nom}</p>
+            <div className="flex items-center gap-2">
+              <span
+                className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10"
+                style={{ backgroundColor: m.couleur ?? "transparent" }}
+                title={m.couleur ? "Couleur du cahier" : "Aucune couleur"}
+              />
+              <p className={`font-title font-semibold ${!m.active ? "text-rentree-encre/40" : ""}`}>{m.nom}</p>
+            </div>
             <div className="flex items-center gap-2">
               <Toggle
                 checked={m.active}
@@ -361,6 +376,28 @@ function SectionMatieres({ familyMemberId, online }: { familyMemberId: string; o
                 ✕
               </button>
             </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs text-rentree-encre/50">Couleur du cahier :</span>
+            <button
+              disabled={!online}
+              onClick={() => majMatiere.mutate({ id: m.id, familyMemberId, couleur: null })}
+              className={`h-5 w-5 shrink-0 rounded-full border border-dashed border-black/20 disabled:opacity-40 ${
+                !m.couleur ? "ring-2 ring-rentree-encre/30" : ""
+              }`}
+              title="Aucune couleur"
+            />
+            {COULEURS_MATIERE.map((c) => (
+              <button
+                key={c}
+                disabled={!online}
+                onClick={() => majMatiere.mutate({ id: m.id, familyMemberId, couleur: c })}
+                className={`h-5 w-5 shrink-0 rounded-full disabled:opacity-40 ${
+                  m.couleur === c ? "ring-2 ring-rentree-encre/50" : ""
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
           </div>
           <Textarea
             rows={2}

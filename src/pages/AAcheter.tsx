@@ -13,26 +13,79 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 type Vue = "tout" | "categorie" | "enfant";
 
+interface LigneConsolidee {
+  cle: string;
+  item: string;
+  qteTotal: number;
+  lignes: FournitureAAcheter[];
+  enfants: { nom: string; emoji: string; qte: number }[];
+  couleurs: { couleur: string; nom: string }[];
+  notes: string[];
+}
+
+/**
+ * Regroupe les lignes de fournitures identiques (même nom d'article) en une
+ * seule ligne avec la quantité totale à acheter — au magasin, pas de "12
+ * lignes" pour "12 cahiers", une seule ligne avec × 12.
+ */
+function consolider(items: FournitureAAcheter[]): LigneConsolidee[] {
+  const map = new Map<string, LigneConsolidee>();
+
+  for (const it of items) {
+    const cle = it.item.trim().toLowerCase();
+    const restant = qteAAcheter(it);
+    let ligne = map.get(cle);
+    if (!ligne) {
+      ligne = { cle, item: it.item, qteTotal: 0, lignes: [], enfants: [], couleurs: [], notes: [] };
+      map.set(cle, ligne);
+    }
+    ligne.qteTotal += restant;
+    ligne.lignes.push(it);
+
+    if (it.family_members) {
+      const existant = ligne.enfants.find((e) => e.nom === it.family_members!.nom);
+      if (existant) existant.qte += restant;
+      else ligne.enfants.push({ nom: it.family_members.nom, emoji: it.family_members.emoji, qte: restant });
+    }
+
+    if (it.matieres?.couleur && !ligne.couleurs.some((c) => c.couleur === it.matieres!.couleur)) {
+      ligne.couleurs.push({ couleur: it.matieres.couleur, nom: it.matieres.nom });
+    }
+
+    if (it.notes && !ligne.notes.includes(it.notes)) {
+      ligne.notes.push(it.notes);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.item.localeCompare(b.item, "fr"));
+}
+
 export default function AAcheter() {
   const { data: items = [] } = useFournituresAAcheter();
   const online = useOnlineStatus();
   const [copie, setCopie] = useState(false);
   const [vue, setVue] = useState<Vue>("tout");
 
+  const consolideTout = useMemo(() => consolider(items), [items]);
+
+  const parCategorie = useMemo(() => {
+    const groupes = grouper(items, (i) => i.categorie || "Sans catégorie");
+    return groupes.map(([nom, lignes]) => [nom, consolider(lignes)] as [string, LigneConsolidee[]]);
+  }, [items]);
+
+  const parEnfant = useMemo(() => {
+    const groupes = grouper(items, (i) => i.family_members?.nom ?? "Non attribué");
+    return groupes.map(
+      ([nom, lignes]) => [nom, lignes[0]?.family_members?.emoji, consolider(lignes)] as [string, string | undefined, LigneConsolidee[]]
+    );
+  }, [items]);
+
   async function copierListe() {
-    const texte = items
-      .map((i) => `- ${i.item} × ${qteAAcheter(i)}${i.family_members ? ` (${i.family_members.nom})` : ""}`)
-      .join("\n");
+    const texte = consolideTout.map((l) => `- ${l.item} × ${l.qteTotal}`).join("\n");
     await navigator.clipboard.writeText(texte);
     setCopie(true);
     setTimeout(() => setCopie(false), 2000);
   }
-
-  const parCategorie = useMemo(() => grouper(items, (i) => i.categorie || "Sans catégorie"), [items]);
-  const parEnfant = useMemo(
-    () => grouper(items, (i) => i.family_members?.nom ?? "Non attribué"),
-    [items]
-  );
 
   return (
     <div>
@@ -68,8 +121,8 @@ export default function AAcheter() {
 
             {vue === "tout" && (
               <Card className="divide-y divide-black/5">
-                {items.map((i) => (
-                  <LigneAAcheter key={i.id} item={i} online={online} afficherEnfant afficherCategorie />
+                {consolideTout.map((l) => (
+                  <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants />
                 ))}
               </Card>
             )}
@@ -81,23 +134,22 @@ export default function AAcheter() {
                     {categorie} <span className="text-xs font-normal text-rentree-encre/50">({lignes.length})</span>
                   </p>
                   <div className="divide-y divide-black/5">
-                    {lignes.map((i) => (
-                      <LigneAAcheter key={i.id} item={i} online={online} afficherEnfant />
+                    {lignes.map((l) => (
+                      <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants />
                     ))}
                   </div>
                 </Card>
               ))}
 
             {vue === "enfant" &&
-              parEnfant.map(([nom, lignes]) => (
+              parEnfant.map(([nom, emoji, lignes]) => (
                 <Card key={nom}>
                   <p className="font-title mb-2 flex items-center gap-1.5 font-semibold">
-                    {lignes[0].family_members?.emoji} {nom}{" "}
-                    <span className="text-xs font-normal text-rentree-encre/50">({lignes.length})</span>
+                    {emoji} {nom} <span className="text-xs font-normal text-rentree-encre/50">({lignes.length})</span>
                   </p>
                   <div className="divide-y divide-black/5">
-                    {lignes.map((i) => (
-                      <LigneAAcheter key={i.id} item={i} online={online} afficherCategorie />
+                    {lignes.map((l) => (
+                      <LigneAAcheter key={l.cle} ligne={l} online={online} />
                     ))}
                   </div>
                 </Card>
@@ -110,48 +162,63 @@ export default function AAcheter() {
 }
 
 function LigneAAcheter({
-  item,
+  ligne,
   online,
-  afficherEnfant,
-  afficherCategorie,
+  afficherEnfants,
 }: {
-  item: FournitureAAcheter;
+  ligne: LigneConsolidee;
   online: boolean;
-  afficherEnfant?: boolean;
-  afficherCategorie?: boolean;
+  afficherEnfants?: boolean;
 }) {
   const marquerAchete = useMarquerAchete();
+
+  /** Coche toutes les lignes sous-jacentes (peut concerner plusieurs enfants). */
+  function toggleTout(achete: boolean) {
+    for (const l of ligne.lignes) {
+      marquerAchete.mutate({
+        id: l.id,
+        familyMemberId: l.family_member_id,
+        qteDemandee: l.qte_demandee,
+        achete,
+      });
+    }
+  }
 
   return (
     <label className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
       <input
         type="checkbox"
         disabled={!online}
-        onChange={(e) =>
-          marquerAchete.mutate({
-            id: item.id,
-            familyMemberId: item.family_member_id,
-            qteDemandee: item.qte_demandee,
-            achete: e.target.checked,
-          })
-        }
+        onChange={(e) => toggleTout(e.target.checked)}
         className="mt-0.5 h-5 w-5 shrink-0 accent-[#D9B3FF] disabled:opacity-40"
       />
       <div className="min-w-0 flex-1">
-        <p className="font-medium">{item.item}</p>
+        <p className="flex items-center gap-1.5 font-medium">
+          {ligne.couleurs.map((c) => (
+            <span
+              key={c.couleur}
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: c.couleur }}
+              title={`Cahier ${c.nom}`}
+            />
+          ))}
+          {ligne.item}
+        </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-rentree-encre/60">
           <span className="rounded-full bg-orange-200 px-2 py-0.5 font-semibold text-orange-800">
-            × {qteAAcheter(item)}
+            × {ligne.qteTotal}
           </span>
-          {afficherEnfant && item.family_members && (
-            <span>
-              {item.family_members.emoji} {item.family_members.nom}
-            </span>
-          )}
-          <span>· {item.section}</span>
-          {afficherCategorie && item.categorie && <span>· {item.categorie}</span>}
+          {afficherEnfants &&
+            ligne.enfants.map((e) => (
+              <span key={e.nom}>
+                {e.emoji} {e.nom}
+                {ligne.enfants.length > 1 ? ` (${e.qte})` : ""}
+              </span>
+            ))}
         </div>
-        {item.notes && <p className="mt-0.5 text-xs italic text-rentree-encre/50">{item.notes}</p>}
+        {ligne.notes.length > 0 && (
+          <p className="mt-0.5 text-xs italic text-rentree-encre/50">{ligne.notes.join(" · ")}</p>
+        )}
       </div>
     </label>
   );

@@ -452,6 +452,7 @@ export type Database = {
         Row: {
           active: boolean
           annee_scolaire_id: string
+          couleur: string | null
           created_at: string
           family_member_id: string
           foyer_id: string
@@ -463,6 +464,7 @@ export type Database = {
         Insert: {
           active?: boolean
           annee_scolaire_id: string
+          couleur?: string | null
           created_at?: string
           family_member_id: string
           foyer_id: string
@@ -474,6 +476,7 @@ export type Database = {
         Update: {
           active?: boolean
           annee_scolaire_id?: string
+          couleur?: string | null
           created_at?: string
           family_member_id?: string
           foyer_id?: string

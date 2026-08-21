@@ -7,6 +7,10 @@ export function qteAAcheter(item: Pick<FournitureItem, "qte_demandee" | "qte_cou
   return Math.max(item.qte_demandee - item.qte_couverte, 0);
 }
 
+export type FournitureAvecMatiere = FournitureItem & {
+  matieres: { nom: string; couleur: string | null } | null;
+};
+
 export function useFournitures(familyMemberId: string | undefined) {
   return useQuery({
     queryKey: ["fournitures", familyMemberId],
@@ -14,12 +18,12 @@ export function useFournitures(familyMemberId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fourniture_items")
-        .select("*")
+        .select("*, matieres(nom, couleur)")
         .eq("family_member_id", familyMemberId!)
         .order("section", { ascending: true })
         .order("ordre", { ascending: true });
       if (error) throw error;
-      return data as FournitureItem[];
+      return data as FournitureAvecMatiere[];
     },
   });
 }
@@ -53,6 +57,7 @@ export function useProgressionParEnfant() {
 
 export type FournitureAAcheter = FournitureItem & {
   family_members: { nom: string; emoji: string; couleur: string } | null;
+  matieres: { nom: string; couleur: string | null } | null;
 };
 
 /** Vue consolidée "à acheter", tous enfants, pour l'année active. */
@@ -65,7 +70,7 @@ export function useFournituresAAcheter() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fourniture_items")
-        .select("*, family_members(nom, emoji, couleur)")
+        .select("*, family_members(nom, emoji, couleur), matieres(nom, couleur)")
         .eq("foyer_id", foyer!.id)
         .eq("annee_scolaire_id", anneeActive!.id)
         .neq("statut", "achete")
