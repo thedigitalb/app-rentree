@@ -9,6 +9,7 @@ export function qteAAcheter(item: Pick<FournitureItem, "qte_demandee" | "qte_cou
 
 export type FournitureAvecMatiere = FournitureItem & {
   matieres: { nom: string; couleur: string | null } | null;
+  stock_commun: { article: string } | null;
 };
 
 export function useFournitures(familyMemberId: string | undefined) {
@@ -18,7 +19,7 @@ export function useFournitures(familyMemberId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fourniture_items")
-        .select("*, matieres(nom, couleur)")
+        .select("*, matieres(nom, couleur), stock_commun(article)")
         .eq("family_member_id", familyMemberId!)
         .order("section", { ascending: true })
         .order("ordre", { ascending: true });
@@ -175,7 +176,10 @@ export function useMarquerAchete() {
 /** Change le statut d'une fourniture parmi les 3 valeurs possibles : à
  * acheter / en stock (déjà à la maison) / acheté. "En stock" et "Acheté"
  * couvrent la quantité demandée en entier ; repasser en "à acheter" remet
- * la couverture à zéro. */
+ * la couverture à zéro. Un statut "en stock" peut être relié à un article
+ * du Stock commun (stockCommunId) : sa quantité disponible en est alors
+ * déduite en direct. Changer de statut sans repasser par "en stock"
+ * dénoue automatiquement ce lien. */
 export function useChangerStatutFourniture() {
   const queryClient = useQueryClient();
 
@@ -185,12 +189,14 @@ export function useChangerStatutFourniture() {
       familyMemberId: string;
       qteDemandee: number;
       statut: StatutFourniture;
+      stockCommunId?: string | null;
     }) => {
       const { error } = await supabase
         .from("fourniture_items")
         .update({
           statut: input.statut,
           qte_couverte: input.statut === "a_acheter" ? 0 : input.qteDemandee,
+          stock_commun_id: input.statut === "en_stock" ? (input.stockCommunId ?? null) : null,
         })
         .eq("id", input.id);
       if (error) throw error;
@@ -198,6 +204,7 @@ export function useChangerStatutFourniture() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["fournitures", variables.familyMemberId] });
       queryClient.invalidateQueries({ queryKey: ["fournitures-a-acheter"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-commun"] });
     },
   });
 }

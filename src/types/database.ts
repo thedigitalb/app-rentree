@@ -243,6 +243,7 @@ export type Database = {
           qte_demandee: number
           section: string
           statut: string
+          stock_commun_id: string | null
         }
         Insert: {
           annee_scolaire_id: string
@@ -258,6 +259,7 @@ export type Database = {
           qte_demandee?: number
           section: string
           statut?: string
+          stock_commun_id?: string | null
         }
         Update: {
           annee_scolaire_id?: string
@@ -273,6 +275,7 @@ export type Database = {
           qte_demandee?: number
           section?: string
           statut?: string
+          stock_commun_id?: string | null
         }
         Relationships: [
           {
@@ -301,6 +304,13 @@ export type Database = {
             columns: ["matiere_id"]
             isOneToOne: false
             referencedRelation: "matieres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fourniture_items_stock_commun_id_fkey"
+            columns: ["stock_commun_id"]
+            isOneToOne: false
+            referencedRelation: "stock_commun"
             referencedColumns: ["id"]
           },
         ]

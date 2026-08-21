@@ -11,6 +11,7 @@ import {
   type FournitureAvecMatiere,
 } from "@/hooks/data/useFournitures";
 import { useAllocationsPourEnfant } from "@/hooks/data/useAttribuables";
+import { useStockCommun, type StockCommunAvecDisponibilite } from "@/hooks/data/useStock";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePreferences } from "@/hooks/usePreferences";
 import { TopBar } from "@/components/TopBar";
@@ -142,6 +143,7 @@ function SectionFournitures({
   const majItem = useUpdateFournitureItem();
   const supprimerItem = useDeleteFournitureItem();
   const creerItem = useCreateFournitureItem();
+  const { data: stockCommun = [] } = useStockCommun();
   const { data: matieres = [] } = useMatieres(familyMemberId);
 
   const [ajout, setAjout] = useState(false);
@@ -192,6 +194,7 @@ function SectionFournitures({
                   majItem={majItem}
                   changerStatut={changerStatut}
                   supprimerItem={supprimerItem}
+                  stockCommun={stockCommun}
                 />
               ))}
             </div>
@@ -264,6 +267,7 @@ function FournitureCard({
   majItem,
   changerStatut,
   supprimerItem,
+  stockCommun,
 }: {
   fourniture: FournitureAvecMatiere;
   familyMemberId: string;
@@ -271,6 +275,7 @@ function FournitureCard({
   majItem: ReturnType<typeof useUpdateFournitureItem>;
   changerStatut: ReturnType<typeof useChangerStatutFourniture>;
   supprimerItem: ReturnType<typeof useDeleteFournitureItem>;
+  stockCommun: StockCommunAvecDisponibilite[];
 }) {
   return (
     <div className="space-y-2 border-b border-black/5 pb-3 last:border-0 last:pb-0">
@@ -346,7 +351,15 @@ function FournitureCard({
           <button
             key={s}
             disabled={!online}
-            onClick={() => changerStatut.mutate({ id: f.id, familyMemberId, qteDemandee: f.qte_demandee, statut: s })}
+            onClick={() =>
+              changerStatut.mutate({
+                id: f.id,
+                familyMemberId,
+                qteDemandee: f.qte_demandee,
+                statut: s,
+                stockCommunId: s === "en_stock" ? f.stock_commun_id : null,
+              })
+            }
             className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition disabled:opacity-40 ${
               f.statut === s ? "bg-rentree-violet" : "text-rentree-encre/50"
             }`}
@@ -355,6 +368,33 @@ function FournitureCard({
           </button>
         ))}
       </div>
+
+      {f.statut === "en_stock" && (
+        <label className="flex items-center gap-1.5 text-xs text-rentree-encre/60">
+          Depuis le stock commun :
+          <select
+            disabled={!online}
+            value={f.stock_commun_id ?? ""}
+            onChange={(e) =>
+              changerStatut.mutate({
+                id: f.id,
+                familyMemberId,
+                qteDemandee: f.qte_demandee,
+                statut: "en_stock",
+                stockCommunId: e.target.value || null,
+              })
+            }
+            className="min-w-0 flex-1 rounded border border-black/10 bg-white px-1 py-0.5 disabled:opacity-40"
+          >
+            <option value="">Non suivi (pas de décompte)</option>
+            {stockCommun.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.article} ({s.disponible} dispo)
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }

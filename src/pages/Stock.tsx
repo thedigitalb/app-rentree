@@ -107,6 +107,12 @@ export default function Stock() {
                     className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
                   />
                 </div>
+                {s.utilise > 0 && (
+                  <p className="text-xs text-rentree-encre/60">
+                    <span className="font-semibold text-rentree-encre">{s.disponible} disponible(s)</span> — {s.utilise}{" "}
+                    déjà pris pour des fournitures "en stock"
+                  </p>
+                )}
                 <input
                   disabled={!online}
                   placeholder="Notes (optionnel)"
