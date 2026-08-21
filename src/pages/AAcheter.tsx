@@ -57,7 +57,9 @@ function consolider(items: FournitureAAcheter[]): LigneConsolidee[] {
     }
   }
 
-  return Array.from(map.values()).sort((a, b) => a.item.localeCompare(b.item, "fr"));
+  return Array.from(map.values())
+    .filter((l) => l.qteTotal > 0)
+    .sort((a, b) => a.item.localeCompare(b.item, "fr"));
 }
 
 interface Annulable {

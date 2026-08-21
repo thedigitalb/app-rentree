@@ -68,15 +68,17 @@ export function useStockCommun() {
         detailsParArticle.set(u.stock_commun_id, liste);
       }
 
-      return (stock as StockCommun[]).map((s) => {
-        const utilise = utiliseParArticle.get(s.id) ?? 0;
-        return {
-          ...s,
-          utilise,
-          disponible: Math.max(s.quantite_totale - utilise, 0),
-          utilisations: detailsParArticle.get(s.id) ?? [],
-        };
-      }) as StockCommunAvecDisponibilite[];
+      return (stock as StockCommun[])
+        .map((s) => {
+          const utilise = utiliseParArticle.get(s.id) ?? 0;
+          return {
+            ...s,
+            utilise,
+            disponible: Math.max(s.quantite_totale - utilise, 0),
+            utilisations: detailsParArticle.get(s.id) ?? [],
+          };
+        })
+        .sort((a, b) => a.article.localeCompare(b.article, "fr", { sensitivity: "base" })) as StockCommunAvecDisponibilite[];
     },
   });
 }

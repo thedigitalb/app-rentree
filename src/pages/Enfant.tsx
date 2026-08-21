@@ -30,7 +30,7 @@ import {
   type StatutFourniture,
 } from "@/types/domain";
 
-type Onglet = "fournitures" | "matieres";
+type Onglet = "fournitures" | "categorie" | "matieres";
 
 export default function Enfant() {
   const { id } = useParams<{ id: string }>();
@@ -98,29 +98,32 @@ export default function Enfant() {
         </Link>
 
         <div className="flex gap-2 rounded-2xl bg-black/5 p-1">
-          <button
-            onClick={() => setOnglet("fournitures")}
-            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-              onglet === "fournitures" ? "bg-white shadow-sm" : "text-rentree-encre/50"
-            }`}
-          >
-            Fournitures
-          </button>
-          <button
-            onClick={() => setOnglet("matieres")}
-            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-              onglet === "matieres" ? "bg-white shadow-sm" : "text-rentree-encre/50"
-            }`}
-          >
-            Matières
-          </button>
+          {(
+            [
+              ["fournitures", "Par matière"],
+              ["categorie", "Par catégorie"],
+              ["matieres", "Matières"],
+            ] as [Onglet, string][]
+          ).map(([o, label]) => (
+            <button
+              key={o}
+              onClick={() => setOnglet(o)}
+              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
+                onglet === o ? "bg-white shadow-sm" : "text-rentree-encre/50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {onglet === "fournitures" ? (
+        {onglet === "fournitures" && (
           <SectionFournitures familyMemberId={id} fournitures={fournitures} online={online} />
-        ) : (
-          <SectionMatieres familyMemberId={id} online={online} />
         )}
+        {onglet === "categorie" && (
+          <SectionParCategorie familyMemberId={id} fournitures={fournitures} online={online} />
+        )}
+        {onglet === "matieres" && <SectionMatieres familyMemberId={id} online={online} />}
 
         <SectionAttribue familyMemberId={id} />
       </div>
@@ -154,7 +157,7 @@ function SectionFournitures({
   const [categorie, setCategorie] = useState<string>("");
   const [notes, setNotes] = useState("");
 
-  const groupes = groupBy(fournitures, (f) => f.section);
+  const groupes = trierGroupes(groupBy(fournitures, (f) => f.section), "Toutes matières confondues");
 
   async function ajouter() {
     if (!item.trim()) return;
@@ -182,7 +185,7 @@ function SectionFournitures({
           description="Ajoutez des articles manuellement, ou importez une liste (bientôt)."
         />
       ) : (
-        Object.entries(groupes).map(([nomSection, items]) => (
+        groupes.map(([nomSection, items]) => (
           <Card key={nomSection}>
             <p className="font-title mb-3 font-semibold">{nomSection}</p>
             <div className="space-y-3">
@@ -255,6 +258,75 @@ function SectionFournitures({
           + Ajouter un article
         </Button>
       )}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// Fournitures, groupées par catégorie (toutes matières confondues),
+// triées alphabétiquement à l'intérieur de chaque catégorie.
+// ------------------------------------------------------------------
+function SectionParCategorie({
+  familyMemberId,
+  fournitures,
+  online,
+}: {
+  familyMemberId: string;
+  fournitures: FournitureAvecMatiere[];
+  online: boolean;
+}) {
+  const changerStatut = useChangerStatutFourniture();
+  const majItem = useUpdateFournitureItem();
+  const supprimerItem = useDeleteFournitureItem();
+  const { data: stockCommun = [] } = useStockCommun();
+  const [filtre, setFiltre] = useState<string>("Toutes");
+
+  const groupesTous = trierGroupes(groupBy(fournitures, (f) => f.categorie || "Sans catégorie"));
+  const groupes = filtre === "Toutes" ? groupesTous : groupesTous.filter(([c]) => c === filtre);
+
+  if (fournitures.length === 0) {
+    return <EmptyState titre="Aucune fourniture pour l'instant" />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {groupesTous.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {["Toutes", ...groupesTous.map(([c]) => c)].map((c) => (
+            <button
+              key={c}
+              onClick={() => setFiltre(c)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                filtre === c ? "bg-rentree-violet" : "bg-black/5 text-rentree-encre/60"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {groupes.map(([categorie, items]) => (
+        <Card key={categorie}>
+          <p className="font-title mb-3 font-semibold">
+            {categorie} <span className="text-xs font-normal text-rentree-encre/50">({items.length})</span>
+          </p>
+          <div className="space-y-3">
+            {items.map((f) => (
+              <FournitureCard
+                key={f.id}
+                fourniture={f}
+                familyMemberId={familyMemberId}
+                online={online}
+                majItem={majItem}
+                changerStatut={changerStatut}
+                supprimerItem={supprimerItem}
+                stockCommun={stockCommun}
+              />
+            ))}
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
@@ -526,4 +598,22 @@ function groupBy<T>(items: T[], fn: (item: T) => string): Record<string, T[]> {
     (acc[key] ??= []).push(item);
     return acc;
   }, {});
+}
+
+/** Trie les groupes par nom (alphabétique, avec un groupe optionnel épinglé
+ * en premier) et les fournitures de chaque groupe par ordre alphabétique. */
+function trierGroupes(
+  groupes: Record<string, FournitureAvecMatiere[]>,
+  epingler?: string
+): [string, FournitureAvecMatiere[]][] {
+  return Object.entries(groupes)
+    .map(([nom, items]) => [nom, [...items].sort((a, b) => a.item.localeCompare(b.item, "fr"))] as [
+      string,
+      FournitureAvecMatiere[],
+    ])
+    .sort((a, b) => {
+      if (a[0] === epingler) return -1;
+      if (b[0] === epingler) return 1;
+      return a[0].localeCompare(b[0], "fr");
+    });
 }

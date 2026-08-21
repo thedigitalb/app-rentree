@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CATEGORIES_FOURNITURE } from "@/types/domain";
 
+type Vue = "alpha" | "categorie";
+
 export default function Stock() {
   const { data: stock = [] } = useStockCommun();
   const creer = useCreateStockCommun();
@@ -21,18 +23,22 @@ export default function Stock() {
   const supprimer = useDeleteStockCommun();
   const online = useOnlineStatus();
 
-  const [filtre, setFiltre] = useState<string>("Toutes");
+  const [vue, setVue] = useState<Vue>("alpha");
   const [ajout, setAjout] = useState(false);
   const [article, setArticle] = useState("");
   const [quantite, setQuantite] = useState(1);
   const [categorie, setCategorie] = useState("");
 
-  const categories = useMemo(
-    () => ["Toutes", ...Array.from(new Set(stock.map((s) => s.categorie).filter(Boolean) as string[]))],
-    [stock]
-  );
-
-  const filtres = filtre === "Toutes" ? stock : stock.filter((s) => s.categorie === filtre);
+  // `stock` est déjà trié alphabétiquement par le hook — les groupes
+  // héritent donc de cet ordre sans tri supplémentaire.
+  const parCategorie = useMemo(() => {
+    const map = new Map<string, StockCommunAvecDisponibilite[]>();
+    for (const s of stock) {
+      const cle = s.categorie || "Sans catégorie";
+      (map.get(cle) ?? map.set(cle, []).get(cle)!).push(s);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], "fr"));
+  }, [stock]);
 
   async function ajouter() {
     if (!article.trim()) return;
@@ -52,28 +58,48 @@ export default function Stock() {
           d'achat.
         </p>
 
-        {categories.length > 2 && (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
+        {stock.length > 0 && (
+          <div className="flex gap-2 rounded-2xl bg-black/5 p-1">
+            {(
+              [
+                ["alpha", "Alphabétique"],
+                ["categorie", "Par catégorie"],
+              ] as [Vue, string][]
+            ).map(([v, label]) => (
               <button
-                key={c}
-                onClick={() => setFiltre(c)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  filtre === c ? "bg-rentree-violet" : "bg-black/5 text-rentree-encre/60"
+                key={v}
+                onClick={() => setVue(v)}
+                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
+                  vue === v ? "bg-white shadow-sm" : "text-rentree-encre/50"
                 }`}
               >
-                {c}
+                {label}
               </button>
             ))}
           </div>
         )}
 
-        {filtres.length === 0 ? (
+        {stock.length === 0 ? (
           <EmptyState titre="Aucun article en stock" />
-        ) : (
+        ) : vue === "alpha" ? (
           <div className="space-y-2">
-            {filtres.map((s) => (
+            {stock.map((s) => (
               <StockCard key={s.id} stock={s} online={online} maj={maj} supprimer={supprimer} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {parCategorie.map(([cat, items]) => (
+              <div key={cat} className="space-y-2">
+                <p className="font-title px-1 text-sm font-semibold text-rentree-encre/70">
+                  {cat} <span className="text-xs font-normal text-rentree-encre/40">({items.length})</span>
+                </p>
+                <div className="space-y-2">
+                  {items.map((s) => (
+                    <StockCard key={s.id} stock={s} online={online} maj={maj} supprimer={supprimer} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -140,6 +166,10 @@ function StockCard({
 }) {
   const [detailOuvert, setDetailOuvert] = useState(false);
 
+  function ajusterQuantite(delta: number) {
+    maj.mutate({ id: s.id, quantite_totale: Math.max(0, s.quantite_totale + delta) });
+  }
+
   return (
     <Card className="space-y-2">
       <div className="flex items-start gap-2">
@@ -160,7 +190,7 @@ function StockCard({
           ✕
         </button>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           disabled={!online}
           defaultValue={s.categorie ?? ""}
@@ -174,14 +204,33 @@ function StockCard({
             </option>
           ))}
         </select>
-        <input
-          type="number"
-          min={0}
-          disabled={!online}
-          defaultValue={s.quantite_totale}
-          onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
-          className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
-        />
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            disabled={!online || s.quantite_totale <= 0}
+            onClick={() => ajusterQuantite(-1)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/5 text-base font-bold text-rentree-encre transition hover:bg-black/10 disabled:opacity-30"
+          >
+            −
+          </button>
+          <input
+            key={s.quantite_totale}
+            type="number"
+            min={0}
+            disabled={!online}
+            defaultValue={s.quantite_totale}
+            onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
+            className="w-12 shrink-0 rounded-lg border border-black/10 px-1 py-1 text-center text-sm disabled:opacity-40"
+          />
+          <button
+            type="button"
+            disabled={!online}
+            onClick={() => ajusterQuantite(1)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/5 text-base font-bold text-rentree-encre transition hover:bg-black/10 disabled:opacity-30"
+          >
+            +
+          </button>
+        </div>
       </div>
       {s.utilise > 0 && (
         <div>
