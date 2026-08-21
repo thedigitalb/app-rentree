@@ -69,31 +69,54 @@ export default function Stock() {
         {filtres.length === 0 ? (
           <EmptyState titre="Aucun article en stock" />
         ) : (
-          <Card className="divide-y divide-black/5">
+          <div className="space-y-2">
             {filtres.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{s.article}</p>
-                  {s.categorie && <p className="text-xs text-rentree-encre/50">{s.categorie}</p>}
+              <Card key={s.id} className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <input
+                    disabled={!online}
+                    defaultValue={s.article}
+                    onBlur={(e) => {
+                      const valeur = e.target.value.trim();
+                      if (valeur && valeur !== s.article) maj.mutate({ id: s.id, article: valeur });
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium focus:border-black/10 focus:bg-white disabled:opacity-40"
+                  />
+                  <button
+                    disabled={!online}
+                    onClick={() => supprimer.mutate(s.id)}
+                    className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    disabled={!online}
+                    placeholder="Catégorie"
+                    defaultValue={s.categorie ?? ""}
+                    onBlur={(e) => maj.mutate({ id: s.id, categorie: e.target.value || null })}
+                    className="min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm disabled:opacity-40"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    disabled={!online}
+                    defaultValue={s.quantite_totale}
+                    onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
+                    className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
+                  />
                 </div>
                 <input
-                  type="number"
-                  min={0}
                   disabled={!online}
-                  defaultValue={s.quantite_totale}
-                  onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
-                  className="w-16 rounded-lg border border-black/10 px-2 py-1 text-center disabled:opacity-40"
+                  placeholder="Notes (optionnel)"
+                  defaultValue={s.notes ?? ""}
+                  onBlur={(e) => maj.mutate({ id: s.id, notes: e.target.value || null })}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-rentree-encre/70 disabled:opacity-40"
                 />
-                <button
-                  disabled={!online}
-                  onClick={() => supprimer.mutate(s.id)}
-                  className="text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
+              </Card>
             ))}
-          </Card>
+          </div>
         )}
 
         {ajout ? (

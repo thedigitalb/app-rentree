@@ -21,7 +21,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HB } from "@/components/HB";
 import { Confetti } from "@/components/Confetti";
-import type { FournitureItem } from "@/types/domain";
+import { CATEGORIES_FOURNITURE, type FournitureItem } from "@/types/domain";
 
 type Onglet = "fournitures" | "matieres";
 
@@ -143,6 +143,7 @@ function SectionFournitures({
   const [section, setSection] = useState("Toutes matières confondues");
   const [item, setItem] = useState("");
   const [qte, setQte] = useState(1);
+  const [categorie, setCategorie] = useState<string>("");
 
   const groupes = groupBy(fournitures, (f) => f.section);
 
@@ -154,9 +155,11 @@ function SectionFournitures({
       section,
       item,
       qteDemandee: qte,
+      categorie: categorie || null,
     });
     setItem("");
     setQte(1);
+    setCategorie("");
     setAjout(false);
   }
 
@@ -200,6 +203,25 @@ function SectionFournitures({
                             className="w-14 rounded border border-black/10 px-1 py-0.5 disabled:opacity-40"
                           />
                         </label>
+                        <select
+                          disabled={!online}
+                          defaultValue={f.categorie ?? ""}
+                          onChange={(e) =>
+                            majItem.mutate({
+                              id: f.id,
+                              familyMemberId,
+                              categorie: e.target.value || null,
+                            })
+                          }
+                          className="rounded border border-black/10 bg-transparent px-1 py-0.5 text-xs disabled:opacity-40"
+                        >
+                          <option value="">Sans catégorie</option>
+                          {CATEGORIES_FOURNITURE.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
                         {restant > 0 && (
                           <span className="rounded-full bg-orange-200 px-2 py-0.5 font-semibold text-orange-800">
                             à acheter : {restant}
@@ -266,6 +288,18 @@ function SectionFournitures({
               className="w-20 rounded-xl border-2 border-black/5 px-2 py-1"
             />
           </div>
+          <select
+            value={categorie}
+            onChange={(e) => setCategorie(e.target.value)}
+            className="w-full rounded-2xl border-2 border-black/5 px-3 py-2 text-sm"
+          >
+            <option value="">Catégorie (optionnel)</option>
+            {CATEGORIES_FOURNITURE.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={ajouter} disabled={!online || creerItem.isPending}>
               Ajouter

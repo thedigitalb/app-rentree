@@ -231,6 +231,7 @@ export type Database = {
       fourniture_items: {
         Row: {
           annee_scolaire_id: string
+          categorie: string | null
           family_member_id: string
           foyer_id: string
           id: string
@@ -245,6 +246,7 @@ export type Database = {
         }
         Insert: {
           annee_scolaire_id: string
+          categorie?: string | null
           family_member_id: string
           foyer_id: string
           id?: string
@@ -259,6 +261,7 @@ export type Database = {
         }
         Update: {
           annee_scolaire_id?: string
+          categorie?: string | null
           family_member_id?: string
           foyer_id?: string
           id?: string

@@ -33,6 +33,37 @@ export default function Dashboard() {
           </p>
         )}
 
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/stock">
+            <Card className="h-full">
+              <p className="text-2xl">📦</p>
+              <p className="font-title font-semibold">Stock commun</p>
+              <p className="text-xs text-rentree-encre/60">{stock.length} article(s)</p>
+            </Card>
+          </Link>
+          <Link to="/attribuables">
+            <Card className="h-full">
+              <p className="text-2xl">🎒</p>
+              <p className="font-title font-semibold">Objets attribuables</p>
+              <p className="text-xs text-rentree-encre/60">{attribuables.length} article(s)</p>
+            </Card>
+          </Link>
+          <Link to="/a-acheter">
+            <Card className="h-full">
+              <p className="text-2xl">🛒</p>
+              <p className="font-title font-semibold">À acheter</p>
+              <p className="text-xs text-rentree-encre/60">{aAcheter.length} ligne(s)</p>
+            </Card>
+          </Link>
+          <Link to="/budget">
+            <Card className="h-full">
+              <p className="text-2xl">💶</p>
+              <p className="font-title font-semibold">Budget</p>
+              <p className="text-xs text-rentree-encre/60">{totalDepense.toFixed(2)} € cette année</p>
+            </Card>
+          </Link>
+        </div>
+
         {enfants.length === 0 ? (
           <EmptyState
             titre="Aucun enfant pour l'instant"
@@ -83,37 +114,6 @@ export default function Dashboard() {
             })}
           </div>
         )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <Link to="/stock">
-            <Card className="h-full">
-              <p className="text-2xl">📦</p>
-              <p className="font-title font-semibold">Stock commun</p>
-              <p className="text-xs text-rentree-encre/60">{stock.length} article(s)</p>
-            </Card>
-          </Link>
-          <Link to="/attribuables">
-            <Card className="h-full">
-              <p className="text-2xl">🎒</p>
-              <p className="font-title font-semibold">Objets attribuables</p>
-              <p className="text-xs text-rentree-encre/60">{attribuables.length} article(s)</p>
-            </Card>
-          </Link>
-          <Link to="/a-acheter">
-            <Card className="h-full">
-              <p className="text-2xl">🛒</p>
-              <p className="font-title font-semibold">À acheter</p>
-              <p className="text-xs text-rentree-encre/60">{aAcheter.length} ligne(s)</p>
-            </Card>
-          </Link>
-          <Link to="/budget">
-            <Card className="h-full">
-              <p className="text-2xl">💶</p>
-              <p className="font-title font-semibold">Budget</p>
-              <p className="text-xs text-rentree-encre/60">{totalDepense.toFixed(2)} € cette année</p>
-            </Card>
-          </Link>
-        </div>
 
         <div className="flex justify-center pt-2">
           <HB humeur="neutre" taille={70} animer={false} />

@@ -51,6 +51,10 @@ export function useProgressionParEnfant() {
   });
 }
 
+export type FournitureAAcheter = FournitureItem & {
+  family_members: { nom: string; emoji: string; couleur: string } | null;
+};
+
 /** Vue consolidée "à acheter", tous enfants, pour l'année active. */
 export function useFournituresAAcheter() {
   const { foyer, anneeActive } = useFoyer();
@@ -67,9 +71,7 @@ export function useFournituresAAcheter() {
         .neq("statut", "achete")
         .order("section", { ascending: true });
       if (error) throw error;
-      return data as (FournitureItem & {
-        family_members: { nom: string; emoji: string; couleur: string } | null;
-      })[];
+      return data as FournitureAAcheter[];
     },
   });
 }
@@ -86,6 +88,7 @@ export function useCreateFournitureItem() {
       item: string;
       qteDemandee: number;
       notes?: string | null;
+      categorie?: string | null;
     }) => {
       if (!foyer || !anneeActive) throw new Error("Foyer ou année scolaire manquants");
       const { data, error } = await supabase
@@ -99,6 +102,7 @@ export function useCreateFournitureItem() {
           item: input.item,
           qte_demandee: input.qteDemandee,
           notes: input.notes ?? null,
+          categorie: input.categorie ?? null,
         })
         .select("*")
         .single();
@@ -120,7 +124,7 @@ export function useUpdateFournitureItem() {
       input: { id: string; familyMemberId: string } & Partial<
         Pick<
           FournitureItem,
-          "qte_demandee" | "qte_couverte" | "statut" | "notes" | "item" | "section"
+          "qte_demandee" | "qte_couverte" | "statut" | "notes" | "item" | "section" | "categorie"
         >
       >
     ) => {

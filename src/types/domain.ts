@@ -45,3 +45,16 @@ export const COULEURS_ENFANT = [
   "#B3E5FF",
   "#FFC9A3",
 ];
+
+/** Catégories de fournitures (indépendantes de la matière et de l'enfant),
+ * utilisées pour filtrer la vue "à acheter" au magasin. */
+export const CATEGORIES_FOURNITURE = [
+  "Écriture",
+  "Cahiers & classeurs",
+  "Instruments de géométrie",
+  "Arts",
+  "Sport",
+  "Autre",
+] as const;
+
+export type CategorieFourniture = (typeof CATEGORIES_FOURNITURE)[number];
