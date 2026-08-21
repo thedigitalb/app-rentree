@@ -179,9 +179,12 @@ function SectionFournitures({
               {items.map((f) => {
                 const restant = qteAAcheter(f);
                 return (
-                  <div key={f.id} className="flex items-center gap-3 border-b border-black/5 pb-3 last:border-0 last:pb-0">
-                    <div className="min-w-0 flex-1">
-                      <p className={`flex items-center gap-1.5 font-medium ${f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""}`}>
+                  <div
+                    key={f.id}
+                    className="space-y-2 border-b border-black/5 pb-3 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`flex min-w-0 items-center gap-1.5 font-medium ${f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""}`}>
                         {f.matieres?.couleur && (
                           <span
                             className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -189,80 +192,85 @@ function SectionFournitures({
                             title={`Cahier ${f.matieres.nom}`}
                           />
                         )}
-                        {f.item}
+                        <span className="min-w-0 break-words">{f.item}</span>
                       </p>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-rentree-encre/60">
-                        <span>Demandé : {f.qte_demandee}</span>
-                        <span>·</span>
-                        <label className="flex items-center gap-1">
-                          Couvert :
-                          <input
-                            type="number"
-                            min={0}
-                            disabled={!online}
-                            defaultValue={f.qte_couverte}
-                            onBlur={(e) =>
-                              majItem.mutate({
-                                id: f.id,
-                                familyMemberId,
-                                qte_couverte: Number(e.target.value),
-                              })
-                            }
-                            className="w-14 rounded border border-black/10 px-1 py-0.5 disabled:opacity-40"
-                          />
-                        </label>
-                        <select
+                      <button
+                        disabled={!online}
+                        onClick={() => supprimerItem.mutate({ id: f.id, familyMemberId })}
+                        className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
+                        aria-label="Supprimer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-rentree-encre/60">
+                      <span>Demandé : {f.qte_demandee}</span>
+                      <label className="flex items-center gap-1">
+                        Couvert :
+                        <input
+                          type="number"
+                          min={0}
                           disabled={!online}
-                          defaultValue={f.categorie ?? ""}
-                          onChange={(e) =>
+                          defaultValue={f.qte_couverte}
+                          onBlur={(e) =>
                             majItem.mutate({
                               id: f.id,
                               familyMemberId,
-                              categorie: e.target.value || null,
+                              qte_couverte: Number(e.target.value),
                             })
                           }
-                          className="rounded border border-black/10 bg-transparent px-1 py-0.5 text-xs disabled:opacity-40"
-                        >
-                          <option value="">Sans catégorie</option>
-                          {CATEGORIES_FOURNITURE.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                        {restant > 0 && (
-                          <span className="rounded-full bg-orange-200 px-2 py-0.5 font-semibold text-orange-800">
-                            à acheter : {restant}
-                          </span>
-                        )}
-                      </div>
+                          className="w-14 rounded border border-black/10 px-1 py-0.5 disabled:opacity-40"
+                        />
+                      </label>
+                      <select
+                        disabled={!online}
+                        defaultValue={f.categorie ?? ""}
+                        onChange={(e) =>
+                          majItem.mutate({
+                            id: f.id,
+                            familyMemberId,
+                            categorie: e.target.value || null,
+                          })
+                        }
+                        className="rounded border border-black/10 bg-transparent px-1 py-0.5 text-xs disabled:opacity-40"
+                      >
+                        <option value="">Sans catégorie</option>
+                        {CATEGORIES_FOURNITURE.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <button
-                      disabled={!online}
-                      onClick={() =>
-                        marquerAchete.mutate({
-                          id: f.id,
-                          familyMemberId,
-                          qteDemandee: f.qte_demandee,
-                          achete: f.statut !== "achete",
-                        })
-                      }
-                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-40 ${
-                        f.statut === "achete"
-                          ? "bg-rentree-turquoise text-rentree-encre"
-                          : "bg-rentree-violet text-rentree-encre"
-                      }`}
-                    >
-                      {f.statut === "achete" ? "✓ Acheté" : "Marquer acheté"}
-                    </button>
-                    <button
-                      disabled={!online}
-                      onClick={() => supprimerItem.mutate({ id: f.id, familyMemberId })}
-                      className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
-                      aria-label="Supprimer"
-                    >
-                      ✕
-                    </button>
+
+                    <div className="flex items-center justify-between gap-2">
+                      {restant > 0 ? (
+                        <span className="rounded-full bg-orange-200 px-2 py-1 text-xs font-semibold text-orange-800">
+                          à acheter : {restant}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <button
+                        disabled={!online}
+                        onClick={() =>
+                          marquerAchete.mutate({
+                            id: f.id,
+                            familyMemberId,
+                            qteDemandee: f.qte_demandee,
+                            achete: f.statut !== "achete",
+                          })
+                        }
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-40 ${
+                          f.statut === "achete"
+                            ? "bg-rentree-turquoise text-rentree-encre"
+                            : "bg-rentree-violet text-rentree-encre"
+                        }`}
+                      >
+                        {f.statut === "achete" ? "✓ Acheté" : "Marquer acheté"}
+                      </button>
+                    </div>
                   </div>
                 );
               })}

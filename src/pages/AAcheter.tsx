@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useFournituresAAcheter,
   useMarquerAchete,
@@ -60,11 +60,43 @@ function consolider(items: FournitureAAcheter[]): LigneConsolidee[] {
   return Array.from(map.values()).sort((a, b) => a.item.localeCompare(b.item, "fr"));
 }
 
+interface Annulable {
+  item: string;
+  lignes: FournitureAAcheter[];
+}
+
 export default function AAcheter() {
   const { data: items = [] } = useFournituresAAcheter();
   const online = useOnlineStatus();
   const [copie, setCopie] = useState(false);
   const [vue, setVue] = useState<Vue>("tout");
+  const [annulable, setAnnulable] = useState<Annulable | null>(null);
+  const marquerAchete = useMarquerAchete();
+  const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (minuteur.current) clearTimeout(minuteur.current);
+  }, []);
+
+  function signalerCoche(ligne: Annulable) {
+    setAnnulable(ligne);
+    if (minuteur.current) clearTimeout(minuteur.current);
+    minuteur.current = setTimeout(() => setAnnulable(null), 6000);
+  }
+
+  function annuler() {
+    if (!annulable) return;
+    for (const l of annulable.lignes) {
+      marquerAchete.mutate({
+        id: l.id,
+        familyMemberId: l.family_member_id,
+        qteDemandee: l.qte_demandee,
+        achete: false,
+      });
+    }
+    setAnnulable(null);
+    if (minuteur.current) clearTimeout(minuteur.current);
+  }
 
   const consolideTout = useMemo(() => consolider(items), [items]);
 
@@ -122,7 +154,7 @@ export default function AAcheter() {
             {vue === "tout" && (
               <Card className="divide-y divide-black/5">
                 {consolideTout.map((l) => (
-                  <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants />
+                  <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants onCoche={signalerCoche} />
                 ))}
               </Card>
             )}
@@ -135,7 +167,7 @@ export default function AAcheter() {
                   </p>
                   <div className="divide-y divide-black/5">
                     {lignes.map((l) => (
-                      <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants />
+                      <LigneAAcheter key={l.cle} ligne={l} online={online} afficherEnfants onCoche={signalerCoche} />
                     ))}
                   </div>
                 </Card>
@@ -149,7 +181,7 @@ export default function AAcheter() {
                   </p>
                   <div className="divide-y divide-black/5">
                     {lignes.map((l) => (
-                      <LigneAAcheter key={l.cle} ligne={l} online={online} />
+                      <LigneAAcheter key={l.cle} ligne={l} online={online} onCoche={signalerCoche} />
                     ))}
                   </div>
                 </Card>
@@ -157,6 +189,15 @@ export default function AAcheter() {
           </>
         )}
       </div>
+
+      {annulable && (
+        <div className="fixed inset-x-4 bottom-24 z-40 flex items-center justify-between gap-3 rounded-2xl bg-rentree-encre px-4 py-3 text-sm text-white shadow-lg">
+          <span className="min-w-0 truncate">« {annulable.item} » marqué acheté</span>
+          <button onClick={annuler} className="shrink-0 font-bold underline">
+            Annuler
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -165,10 +206,12 @@ function LigneAAcheter({
   ligne,
   online,
   afficherEnfants,
+  onCoche,
 }: {
   ligne: LigneConsolidee;
   online: boolean;
   afficherEnfants?: boolean;
+  onCoche: (ligne: Annulable) => void;
 }) {
   const marquerAchete = useMarquerAchete();
 
@@ -182,6 +225,7 @@ function LigneAAcheter({
         achete,
       });
     }
+    if (achete) onCoche({ item: ligne.item, lignes: ligne.lignes });
   }
 
   return (
