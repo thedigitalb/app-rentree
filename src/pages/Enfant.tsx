@@ -296,7 +296,7 @@ function FournitureCard({
             if (valeur && valeur !== f.item) majItem.mutate({ id: f.id, familyMemberId, item: valeur });
           }}
           className={`min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium focus:border-black/10 focus:bg-white disabled:opacity-40 ${
-            f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""
+            f.statut !== "a_acheter" ? "text-rentree-encre/40 line-through" : ""
           }`}
         />
         <button

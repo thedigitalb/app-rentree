@@ -67,10 +67,10 @@ function SectionMembresFoyer() {
       </h2>
       <Card className="space-y-2">
         {membres.map((m) => (
-          <div key={m.user_id} className="flex items-center justify-between text-sm">
-            <span>{m.email}</span>
+          <div key={m.user_id} className="flex items-center justify-between gap-2 text-sm">
+            <span className="min-w-0 truncate">{m.email}</span>
             {m.user_id === user?.id && (
-              <span className="rounded-full bg-rentree-violet px-2 py-0.5 text-xs font-semibold">Vous</span>
+              <span className="shrink-0 rounded-full bg-rentree-violet px-2 py-0.5 text-xs font-semibold">Vous</span>
             )}
           </div>
         ))}
@@ -147,15 +147,15 @@ function SectionEnfants({ online }: { online: boolean }) {
       <div className="space-y-2">
         {enfants.map((e) => (
           <Card key={e.id} className="flex items-center gap-3">
-            <span className="text-2xl">{e.emoji}</span>
-            <div className="flex-1">
-              <p className="font-medium">{e.nom}</p>
+            <span className="shrink-0 text-2xl">{e.emoji}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{e.nom}</p>
             </div>
             <select
               disabled={!online}
               defaultValue={e.niveau}
               onChange={(ev) => majEnfant.mutate({ id: e.id, niveau: ev.target.value })}
-              className="rounded-xl border-2 border-black/5 px-2 py-1.5 text-sm disabled:opacity-40"
+              className="shrink-0 rounded-xl border-2 border-black/5 px-2 py-1.5 text-sm disabled:opacity-40"
             >
               {NIVEAUX_GROUPES.map((groupe) => (
                 <optgroup key={groupe.label} label={groupe.label}>

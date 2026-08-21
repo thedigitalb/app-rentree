@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   useArticlesAttribuables,
   useCreateArticleAttribuable,
+  useUpdateArticleAttribuable,
   useDeleteArticleAttribuable,
   useUpsertAllocation,
   useDeleteAllocation,
@@ -116,7 +117,9 @@ function ArticleCard({
   const upsert = useUpsertAllocation();
   const supprimerAllocation = useDeleteAllocation();
   const supprimerArticle = useDeleteArticleAttribuable();
+  const majArticle = useUpdateArticleAttribuable();
   const [erreur, setErreur] = useState<string | null>(null);
+  const [erreurQuantite, setErreurQuantite] = useState<string | null>(null);
   const [ajoutAlloc, setAjoutAlloc] = useState(false);
   const [enfantId, setEnfantId] = useState("");
   const [quantite, setQuantite] = useState(1);
@@ -141,23 +144,72 @@ function ArticleCard({
     }
   }
 
+  async function changerQuantiteTotale(valeur: number) {
+    setErreurQuantite(null);
+    try {
+      await majArticle.mutateAsync({ id: article.id, quantite_totale: valeur });
+    } catch (err) {
+      setErreurQuantite(err instanceof Error ? err.message : "Modification refusée.");
+    }
+  }
+
   return (
-    <Card>
-      <div className="mb-2 flex items-center justify-between">
-        <div>
-          <p className="font-title font-semibold">{article.article}</p>
-          <p className="text-xs text-rentree-encre/60">
-            {totalAlloue} / {article.quantite_totale} attribué(s) — {nonAttribue} non attribué(s)
-          </p>
-        </div>
+    <Card className="space-y-2">
+      <div className="flex items-start gap-2">
+        <input
+          disabled={!online}
+          defaultValue={article.article}
+          onBlur={(e) => {
+            const valeur = e.target.value.trim();
+            if (valeur && valeur !== article.article) majArticle.mutate({ id: article.id, article: valeur });
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-title font-semibold focus:border-black/10 focus:bg-white disabled:opacity-40"
+        />
         <button
           disabled={!online}
           onClick={() => supprimerArticle.mutate(article.id)}
-          className="text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
+          className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
         >
           ✕
         </button>
       </div>
+
+      <div className="flex gap-2">
+        <select
+          disabled={!online}
+          defaultValue={article.categorie ?? ""}
+          onChange={(e) => majArticle.mutate({ id: article.id, categorie: e.target.value || null })}
+          className="min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm disabled:opacity-40"
+        >
+          <option value="">Sans catégorie</option>
+          {CATEGORIES_FOURNITURE.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min={0}
+          disabled={!online}
+          defaultValue={article.quantite_totale}
+          onBlur={(e) => changerQuantiteTotale(Number(e.target.value))}
+          className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
+        />
+      </div>
+
+      <p className="text-xs text-rentree-encre/60">
+        {totalAlloue} / {article.quantite_totale} attribué(s) — {nonAttribue} non attribué(s)
+      </p>
+      {erreurQuantite && <p className="text-xs font-medium text-red-600">{erreurQuantite}</p>}
+
+      <input
+        disabled={!online}
+        placeholder="Notes (optionnel)"
+        defaultValue={article.notes ?? ""}
+        onBlur={(e) => majArticle.mutate({ id: article.id, notes: e.target.value || null })}
+        className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-rentree-encre/70 disabled:opacity-40"
+      />
 
       {article.allocations.length > 0 && (
         <ul className="mb-2 space-y-1.5 text-sm">

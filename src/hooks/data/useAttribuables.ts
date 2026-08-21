@@ -73,6 +73,21 @@ export function useCreateArticleAttribuable() {
   });
 }
 
+export function useUpdateArticleAttribuable() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { id: string } & Partial<ArticleAttribuable>) => {
+      const { id, ...rest } = input;
+      const { error } = await supabase.from("articles_attribuables").update(rest).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["articles-attribuables"] });
+    },
+  });
+}
+
 export function useDeleteArticleAttribuable() {
   const queryClient = useQueryClient();
   return useMutation({

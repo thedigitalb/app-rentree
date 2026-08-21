@@ -52,7 +52,7 @@ export default function Dashboard() {
             <Card className="h-full">
               <p className="text-2xl">🛒</p>
               <p className="font-title font-semibold">À acheter</p>
-              <p className="text-xs text-rentree-encre/60">{aAcheter.length} ligne(s)</p>
+              <p className="text-xs text-rentree-encre/60">{aAcheter.length} article(s) à prendre</p>
             </Card>
           </Link>
           <Link to="/budget">
@@ -94,9 +94,9 @@ export default function Dashboard() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-title truncate font-semibold">{enfant.nom}</p>
+                        <p className="font-title min-w-0 truncate font-semibold">{enfant.nom}</p>
                         {pret && (
-                          <span className="rounded-full bg-rentree-turquoise px-2 py-0.5 text-xs font-bold">
+                          <span className="shrink-0 rounded-full bg-rentree-turquoise px-2 py-0.5 text-xs font-bold">
                             Rentrée prête ! 🎉
                           </span>
                         )}
