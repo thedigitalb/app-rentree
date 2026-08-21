@@ -3,9 +3,17 @@ import { supabase } from "@/lib/supabase";
 import { useFoyer } from "@/hooks/useFoyer";
 import type { StockCommun } from "@/types/domain";
 
+export interface UtilisationStock {
+  item: string;
+  qte: number;
+  enfantNom: string;
+  enfantEmoji: string;
+}
+
 export type StockCommunAvecDisponibilite = StockCommun & {
   utilise: number;
   disponible: number;
+  utilisations: UtilisationStock[];
 };
 
 /**
@@ -30,7 +38,7 @@ export function useStockCommun() {
 
       const { data: utilisations, error: erreurUtilisations } = await supabase
         .from("fourniture_items")
-        .select("stock_commun_id, qte_couverte")
+        .select("stock_commun_id, qte_couverte, item, family_members(nom, emoji)")
         .eq("foyer_id", foyer!.id)
         .eq("annee_scolaire_id", anneeActive!.id)
         .eq("statut", "en_stock")
@@ -38,17 +46,36 @@ export function useStockCommun() {
       if (erreurUtilisations) throw erreurUtilisations;
 
       const utiliseParArticle = new Map<string, number>();
-      for (const u of utilisations ?? []) {
+      const detailsParArticle = new Map<string, UtilisationStock[]>();
+      for (const u of (utilisations ?? []) as unknown as {
+        stock_commun_id: string | null;
+        qte_couverte: number;
+        item: string;
+        family_members: { nom: string; emoji: string } | null;
+      }[]) {
         if (!u.stock_commun_id) continue;
         utiliseParArticle.set(
           u.stock_commun_id,
           (utiliseParArticle.get(u.stock_commun_id) ?? 0) + u.qte_couverte
         );
+        const liste = detailsParArticle.get(u.stock_commun_id) ?? [];
+        liste.push({
+          item: u.item,
+          qte: u.qte_couverte,
+          enfantNom: u.family_members?.nom ?? "?",
+          enfantEmoji: u.family_members?.emoji ?? "🧒",
+        });
+        detailsParArticle.set(u.stock_commun_id, liste);
       }
 
       return (stock as StockCommun[]).map((s) => {
         const utilise = utiliseParArticle.get(s.id) ?? 0;
-        return { ...s, utilise, disponible: Math.max(s.quantite_totale - utilise, 0) };
+        return {
+          ...s,
+          utilise,
+          disponible: Math.max(s.quantite_totale - utilise, 0),
+          utilisations: detailsParArticle.get(s.id) ?? [],
+        };
       }) as StockCommunAvecDisponibilite[];
     },
   });

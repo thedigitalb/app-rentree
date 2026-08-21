@@ -4,6 +4,7 @@ import {
   useCreateStockCommun,
   useUpdateStockCommun,
   useDeleteStockCommun,
+  type StockCommunAvecDisponibilite,
 } from "@/hooks/data/useStock";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { TopBar } from "@/components/TopBar";
@@ -72,62 +73,7 @@ export default function Stock() {
         ) : (
           <div className="space-y-2">
             {filtres.map((s) => (
-              <Card key={s.id} className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <input
-                    disabled={!online}
-                    defaultValue={s.article}
-                    onBlur={(e) => {
-                      const valeur = e.target.value.trim();
-                      if (valeur && valeur !== s.article) maj.mutate({ id: s.id, article: valeur });
-                    }}
-                    className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium focus:border-black/10 focus:bg-white disabled:opacity-40"
-                  />
-                  <button
-                    disabled={!online}
-                    onClick={() => supprimer.mutate(s.id)}
-                    className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    disabled={!online}
-                    defaultValue={s.categorie ?? ""}
-                    onChange={(e) => maj.mutate({ id: s.id, categorie: e.target.value || null })}
-                    className="min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm disabled:opacity-40"
-                  >
-                    <option value="">Sans catégorie</option>
-                    {CATEGORIES_FOURNITURE.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={0}
-                    disabled={!online}
-                    defaultValue={s.quantite_totale}
-                    onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
-                    className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
-                  />
-                </div>
-                {s.utilise > 0 && (
-                  <p className="text-xs text-rentree-encre/60">
-                    <span className="font-semibold text-rentree-encre">{s.disponible} disponible(s)</span> — {s.utilise}{" "}
-                    déjà pris pour des fournitures "en stock"
-                  </p>
-                )}
-                <input
-                  disabled={!online}
-                  placeholder="Notes (optionnel)"
-                  defaultValue={s.notes ?? ""}
-                  onBlur={(e) => maj.mutate({ id: s.id, notes: e.target.value || null })}
-                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-rentree-encre/70 disabled:opacity-40"
-                />
-              </Card>
+              <StockCard key={s.id} stock={s} online={online} maj={maj} supprimer={supprimer} />
             ))}
           </div>
         )}
@@ -178,5 +124,95 @@ export default function Stock() {
         )}
       </div>
     </div>
+  );
+}
+
+function StockCard({
+  stock: s,
+  online,
+  maj,
+  supprimer,
+}: {
+  stock: StockCommunAvecDisponibilite;
+  online: boolean;
+  maj: ReturnType<typeof useUpdateStockCommun>;
+  supprimer: ReturnType<typeof useDeleteStockCommun>;
+}) {
+  const [detailOuvert, setDetailOuvert] = useState(false);
+
+  return (
+    <Card className="space-y-2">
+      <div className="flex items-start gap-2">
+        <input
+          disabled={!online}
+          defaultValue={s.article}
+          onBlur={(e) => {
+            const valeur = e.target.value.trim();
+            if (valeur && valeur !== s.article) maj.mutate({ id: s.id, article: valeur });
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium focus:border-black/10 focus:bg-white disabled:opacity-40"
+        />
+        <button
+          disabled={!online}
+          onClick={() => supprimer.mutate(s.id)}
+          className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <select
+          disabled={!online}
+          defaultValue={s.categorie ?? ""}
+          onChange={(e) => maj.mutate({ id: s.id, categorie: e.target.value || null })}
+          className="min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm disabled:opacity-40"
+        >
+          <option value="">Sans catégorie</option>
+          {CATEGORIES_FOURNITURE.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min={0}
+          disabled={!online}
+          defaultValue={s.quantite_totale}
+          onBlur={(e) => maj.mutate({ id: s.id, quantite_totale: Number(e.target.value) })}
+          className="w-16 shrink-0 rounded-lg border border-black/10 px-2 py-1 text-center text-sm disabled:opacity-40"
+        />
+      </div>
+      {s.utilise > 0 && (
+        <div>
+          <button
+            onClick={() => setDetailOuvert((v) => !v)}
+            className="text-left text-xs text-rentree-encre/60 underline decoration-dotted"
+          >
+            <span className="font-semibold text-rentree-encre no-underline">{s.disponible} disponible(s)</span> —{" "}
+            {s.utilise} déjà pris {detailOuvert ? "▲" : "▼ (voir par qui)"}
+          </button>
+          {detailOuvert && (
+            <ul className="mt-1.5 space-y-1 rounded-lg bg-black/5 p-2 text-xs text-rentree-encre/70">
+              {s.utilisations.map((u, i) => (
+                <li key={i} className="flex items-center justify-between gap-2">
+                  <span>
+                    {u.enfantEmoji} {u.enfantNom} — {u.item}
+                  </span>
+                  <span className="shrink-0 font-semibold">× {u.qte}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      <input
+        disabled={!online}
+        placeholder="Notes (optionnel)"
+        defaultValue={s.notes ?? ""}
+        onBlur={(e) => maj.mutate({ id: s.id, notes: e.target.value || null })}
+        className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-rentree-encre/70 disabled:opacity-40"
+      />
+    </Card>
   );
 }
