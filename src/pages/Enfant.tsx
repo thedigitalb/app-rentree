@@ -12,6 +12,7 @@ import {
 } from "@/hooks/data/useFournitures";
 import { useAllocationsPourEnfant } from "@/hooks/data/useAttribuables";
 import { useStockCommun, type StockCommunAvecDisponibilite } from "@/hooks/data/useStock";
+import { trouverCorrespondanceStock } from "@/utils/matchStock";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePreferences } from "@/hooks/usePreferences";
 import { TopBar } from "@/components/TopBar";
@@ -351,15 +352,13 @@ function FournitureCard({
           <button
             key={s}
             disabled={!online}
-            onClick={() =>
-              changerStatut.mutate({
-                id: f.id,
-                familyMemberId,
-                qteDemandee: f.qte_demandee,
-                statut: s,
-                stockCommunId: s === "en_stock" ? f.stock_commun_id : null,
-              })
-            }
+            onClick={() => {
+              const stockCommunId =
+                s === "en_stock"
+                  ? (f.stock_commun_id ?? trouverCorrespondanceStock(f.item, stockCommun)?.id ?? null)
+                  : null;
+              changerStatut.mutate({ id: f.id, familyMemberId, qteDemandee: f.qte_demandee, statut: s, stockCommunId });
+            }}
             className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition disabled:opacity-40 ${
               f.statut === s ? "bg-rentree-violet" : "text-rentree-encre/50"
             }`}
