@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CATEGORIES_FOURNITURE } from "@/types/domain";
 
 export default function Stock() {
   const { data: stock = [] } = useStockCommun();
@@ -91,13 +92,19 @@ export default function Stock() {
                   </button>
                 </div>
                 <div className="flex gap-2">
-                  <input
+                  <select
                     disabled={!online}
-                    placeholder="Catégorie"
                     defaultValue={s.categorie ?? ""}
-                    onBlur={(e) => maj.mutate({ id: s.id, categorie: e.target.value || null })}
+                    onChange={(e) => maj.mutate({ id: s.id, categorie: e.target.value || null })}
                     className="min-w-0 flex-1 rounded-lg border border-black/10 px-2 py-1 text-sm disabled:opacity-40"
-                  />
+                  >
+                    <option value="">Sans catégorie</option>
+                    {CATEGORIES_FOURNITURE.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     min={0}
@@ -141,7 +148,18 @@ export default function Stock() {
               </div>
               <div className="flex-1">
                 <label className="mb-1 block text-xs text-rentree-encre/60">Catégorie</label>
-                <Input value={categorie} onChange={(e) => setCategorie(e.target.value)} />
+                <select
+                  value={categorie}
+                  onChange={(e) => setCategorie(e.target.value)}
+                  className="w-full rounded-xl border-2 border-black/5 px-3 py-2 text-sm"
+                >
+                  <option value="">Sans catégorie</option>
+                  {CATEGORIES_FOURNITURE.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex gap-2">

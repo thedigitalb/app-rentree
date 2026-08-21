@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { FamilyMember } from "@/types/domain";
+import { CATEGORIES_FOURNITURE, type FamilyMember } from "@/types/domain";
 
 export default function Attribuables() {
   const { data: articles = [] } = useArticlesAttribuables();
@@ -71,7 +71,18 @@ export default function Attribuables() {
               </div>
               <div className="flex-1">
                 <label className="mb-1 block text-xs text-rentree-encre/60">Catégorie</label>
-                <Input value={categorie} onChange={(e) => setCategorie(e.target.value)} />
+                <select
+                  value={categorie}
+                  onChange={(e) => setCategorie(e.target.value)}
+                  className="w-full rounded-xl border-2 border-black/5 px-3 py-2 text-sm"
+                >
+                  <option value="">Sans catégorie</option>
+                  {CATEGORIES_FOURNITURE.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex gap-2">
