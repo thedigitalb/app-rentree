@@ -47,7 +47,7 @@ export function useProgressionParEnfant() {
       for (const item of data ?? []) {
         const entree = parEnfant.get(item.family_member_id) ?? { total: 0, achete: 0 };
         entree.total += 1;
-        if (item.statut === "achete") entree.achete += 1;
+        if (item.statut === "achete" || item.statut === "en_stock") entree.achete += 1;
         parEnfant.set(item.family_member_id, entree);
       }
       return parEnfant;
@@ -73,7 +73,7 @@ export function useFournituresAAcheter() {
         .select("*, family_members(nom, emoji, couleur), matieres(nom, couleur)")
         .eq("foyer_id", foyer!.id)
         .eq("annee_scolaire_id", anneeActive!.id)
-        .neq("statut", "achete")
+        .eq("statut", "a_acheter")
         .order("section", { ascending: true });
       if (error) throw error;
       return data as FournitureAAcheter[];
@@ -161,6 +161,36 @@ export function useMarquerAchete() {
         .update({
           statut,
           qte_couverte: input.achete ? input.qteDemandee : 0,
+        })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["fournitures", variables.familyMemberId] });
+      queryClient.invalidateQueries({ queryKey: ["fournitures-a-acheter"] });
+    },
+  });
+}
+
+/** Change le statut d'une fourniture parmi les 3 valeurs possibles : à
+ * acheter / en stock (déjà à la maison) / acheté. "En stock" et "Acheté"
+ * couvrent la quantité demandée en entier ; repasser en "à acheter" remet
+ * la couverture à zéro. */
+export function useChangerStatutFourniture() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      familyMemberId: string;
+      qteDemandee: number;
+      statut: StatutFourniture;
+    }) => {
+      const { error } = await supabase
+        .from("fourniture_items")
+        .update({
+          statut: input.statut,
+          qte_couverte: input.statut === "a_acheter" ? 0 : input.qteDemandee,
         })
         .eq("id", input.id);
       if (error) throw error;

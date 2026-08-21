@@ -6,9 +6,8 @@ import {
   useFournitures,
   useCreateFournitureItem,
   useUpdateFournitureItem,
-  useMarquerAchete,
+  useChangerStatutFourniture,
   useDeleteFournitureItem,
-  qteAAcheter,
   type FournitureAvecMatiere,
 } from "@/hooks/data/useFournitures";
 import { useAllocationsPourEnfant } from "@/hooks/data/useAttribuables";
@@ -22,7 +21,12 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HB } from "@/components/HB";
 import { Confetti } from "@/components/Confetti";
-import { CATEGORIES_FOURNITURE, COULEURS_MATIERE } from "@/types/domain";
+import {
+  CATEGORIES_FOURNITURE,
+  COULEURS_MATIERE,
+  LABELS_STATUT_FOURNITURE,
+  type StatutFourniture,
+} from "@/types/domain";
 
 type Onglet = "fournitures" | "matieres";
 
@@ -35,7 +39,7 @@ export default function Enfant() {
 
   const { data: fournitures = [] } = useFournitures(id);
   const totalItems = fournitures.length;
-  const acheteItems = fournitures.filter((f) => f.statut === "achete").length;
+  const acheteItems = fournitures.filter((f) => f.statut === "achete" || f.statut === "en_stock").length;
   const pret = totalItems > 0 && acheteItems === totalItems;
 
   const [afficherCelebration, setAfficherCelebration] = useState(false);
@@ -134,7 +138,7 @@ function SectionFournitures({
   fournitures: FournitureAvecMatiere[];
   online: boolean;
 }) {
-  const marquerAchete = useMarquerAchete();
+  const changerStatut = useChangerStatutFourniture();
   const majItem = useUpdateFournitureItem();
   const supprimerItem = useDeleteFournitureItem();
   const creerItem = useCreateFournitureItem();
@@ -145,6 +149,7 @@ function SectionFournitures({
   const [item, setItem] = useState("");
   const [qte, setQte] = useState(1);
   const [categorie, setCategorie] = useState<string>("");
+  const [notes, setNotes] = useState("");
 
   const groupes = groupBy(fournitures, (f) => f.section);
 
@@ -157,10 +162,12 @@ function SectionFournitures({
       item,
       qteDemandee: qte,
       categorie: categorie || null,
+      notes: notes || null,
     });
     setItem("");
     setQte(1);
     setCategorie("");
+    setNotes("");
     setAjout(false);
   }
 
@@ -176,104 +183,17 @@ function SectionFournitures({
           <Card key={nomSection}>
             <p className="font-title mb-3 font-semibold">{nomSection}</p>
             <div className="space-y-3">
-              {items.map((f) => {
-                const restant = qteAAcheter(f);
-                return (
-                  <div
-                    key={f.id}
-                    className="space-y-2 border-b border-black/5 pb-3 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className={`flex min-w-0 items-center gap-1.5 font-medium ${f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""}`}>
-                        {f.matieres?.couleur && (
-                          <span
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: f.matieres.couleur }}
-                            title={`Cahier ${f.matieres.nom}`}
-                          />
-                        )}
-                        <span className="min-w-0 break-words">{f.item}</span>
-                      </p>
-                      <button
-                        disabled={!online}
-                        onClick={() => supprimerItem.mutate({ id: f.id, familyMemberId })}
-                        className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
-                        aria-label="Supprimer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-rentree-encre/60">
-                      <span>Demandé : {f.qte_demandee}</span>
-                      <label className="flex items-center gap-1">
-                        Couvert :
-                        <input
-                          type="number"
-                          min={0}
-                          disabled={!online}
-                          defaultValue={f.qte_couverte}
-                          onBlur={(e) =>
-                            majItem.mutate({
-                              id: f.id,
-                              familyMemberId,
-                              qte_couverte: Number(e.target.value),
-                            })
-                          }
-                          className="w-14 rounded border border-black/10 px-1 py-0.5 disabled:opacity-40"
-                        />
-                      </label>
-                      <select
-                        disabled={!online}
-                        defaultValue={f.categorie ?? ""}
-                        onChange={(e) =>
-                          majItem.mutate({
-                            id: f.id,
-                            familyMemberId,
-                            categorie: e.target.value || null,
-                          })
-                        }
-                        className="rounded border border-black/10 bg-transparent px-1 py-0.5 text-xs disabled:opacity-40"
-                      >
-                        <option value="">Sans catégorie</option>
-                        {CATEGORIES_FOURNITURE.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                      {restant > 0 ? (
-                        <span className="rounded-full bg-orange-200 px-2 py-1 text-xs font-semibold text-orange-800">
-                          à acheter : {restant}
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      <button
-                        disabled={!online}
-                        onClick={() =>
-                          marquerAchete.mutate({
-                            id: f.id,
-                            familyMemberId,
-                            qteDemandee: f.qte_demandee,
-                            achete: f.statut !== "achete",
-                          })
-                        }
-                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-40 ${
-                          f.statut === "achete"
-                            ? "bg-rentree-turquoise text-rentree-encre"
-                            : "bg-rentree-violet text-rentree-encre"
-                        }`}
-                      >
-                        {f.statut === "achete" ? "✓ Acheté" : "Marquer acheté"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {items.map((f) => (
+                <FournitureCard
+                  key={f.id}
+                  fourniture={f}
+                  familyMemberId={familyMemberId}
+                  online={online}
+                  majItem={majItem}
+                  changerStatut={changerStatut}
+                  supprimerItem={supprimerItem}
+                />
+              ))}
             </div>
           </Card>
         ))
@@ -316,6 +236,7 @@ function SectionFournitures({
               </option>
             ))}
           </select>
+          <Input placeholder="Notes (optionnel)" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex gap-2">
             <Button className="flex-1" onClick={ajouter} disabled={!online || creerItem.isPending}>
               Ajouter
@@ -330,6 +251,110 @@ function SectionFournitures({
           + Ajouter un article
         </Button>
       )}
+    </div>
+  );
+}
+
+const STATUTS: StatutFourniture[] = ["a_acheter", "en_stock", "achete"];
+
+function FournitureCard({
+  fourniture: f,
+  familyMemberId,
+  online,
+  majItem,
+  changerStatut,
+  supprimerItem,
+}: {
+  fourniture: FournitureAvecMatiere;
+  familyMemberId: string;
+  online: boolean;
+  majItem: ReturnType<typeof useUpdateFournitureItem>;
+  changerStatut: ReturnType<typeof useChangerStatutFourniture>;
+  supprimerItem: ReturnType<typeof useDeleteFournitureItem>;
+}) {
+  return (
+    <div className="space-y-2 border-b border-black/5 pb-3 last:border-0 last:pb-0">
+      <div className="flex items-start gap-2">
+        {f.matieres?.couleur && (
+          <span
+            className="mt-2.5 h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: f.matieres.couleur }}
+            title={`Cahier ${f.matieres.nom}`}
+          />
+        )}
+        <input
+          disabled={!online}
+          defaultValue={f.item}
+          onBlur={(e) => {
+            const valeur = e.target.value.trim();
+            if (valeur && valeur !== f.item) majItem.mutate({ id: f.id, familyMemberId, item: valeur });
+          }}
+          className={`min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium focus:border-black/10 focus:bg-white disabled:opacity-40 ${
+            f.statut === "achete" ? "text-rentree-encre/40 line-through" : ""
+          }`}
+        />
+        <button
+          disabled={!online}
+          onClick={() => supprimerItem.mutate({ id: f.id, familyMemberId })}
+          className="shrink-0 text-rentree-encre/30 hover:text-red-500 disabled:opacity-40"
+          aria-label="Supprimer"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-xs text-rentree-encre/60">
+        <label className="flex items-center gap-1">
+          Quantité :
+          <input
+            type="number"
+            min={1}
+            disabled={!online}
+            defaultValue={f.qte_demandee}
+            onBlur={(e) => {
+              const valeur = Number(e.target.value);
+              if (valeur > 0) majItem.mutate({ id: f.id, familyMemberId, qte_demandee: valeur });
+            }}
+            className="w-14 rounded border border-black/10 px-1 py-0.5 disabled:opacity-40"
+          />
+        </label>
+        <select
+          disabled={!online}
+          defaultValue={f.categorie ?? ""}
+          onChange={(e) => majItem.mutate({ id: f.id, familyMemberId, categorie: e.target.value || null })}
+          className="rounded border border-black/10 bg-transparent px-1 py-0.5 disabled:opacity-40"
+        >
+          <option value="">Sans catégorie</option>
+          {CATEGORIES_FOURNITURE.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <input
+        disabled={!online}
+        placeholder="Notes (ex. pool partagé, facultatif...)"
+        defaultValue={f.notes ?? ""}
+        onBlur={(e) => majItem.mutate({ id: f.id, familyMemberId, notes: e.target.value || null })}
+        className="w-full rounded border border-black/10 bg-transparent px-2 py-1 text-xs text-rentree-encre/70 disabled:opacity-40"
+      />
+
+      <div className="flex gap-1 rounded-xl bg-black/5 p-0.5">
+        {STATUTS.map((s) => (
+          <button
+            key={s}
+            disabled={!online}
+            onClick={() => changerStatut.mutate({ id: f.id, familyMemberId, qteDemandee: f.qte_demandee, statut: s })}
+            className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition disabled:opacity-40 ${
+              f.statut === s ? "bg-rentree-violet" : "text-rentree-encre/50"
+            }`}
+          >
+            {LABELS_STATUT_FOURNITURE[s]}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

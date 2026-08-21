@@ -14,7 +14,13 @@ export type Depense = Tables<"depenses">;
 export type ListeImportee = Tables<"listes_importees">;
 export type Invitation = Tables<"invitations">;
 
-export type StatutFourniture = "a_acheter" | "en_cours" | "achete";
+export type StatutFourniture = "a_acheter" | "en_stock" | "achete";
+
+export const LABELS_STATUT_FOURNITURE: Record<StatutFourniture, string> = {
+  a_acheter: "À acheter",
+  en_stock: "En stock",
+  achete: "Acheté",
+};
 
 export const NIVEAUX_PRIMAIRE = [
   "Petite section",
